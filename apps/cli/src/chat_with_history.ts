@@ -1,4 +1,4 @@
-import { create_llm } from "../../../packages/providers/llm/src/index.ts";
+import { create_llm } from "../../../packages/providers/src/llm/index.ts";
 import readline from "readline/promises";
 import { stdin as input, stdout as output } from "process";
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
