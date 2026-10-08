@@ -1,12 +1,21 @@
 import { MessagesValue, type GraphNode, StateGraph, START, END, StateSchema } from "@langchain/langgraph";
 import { AgentState } from "./state.ts";
 import { create_llm } from "../llm/index.ts";
+import { HumanMessage, SystemMessage } from "langchain";
 
 
 const chat_node = async(state: typeof AgentState.State) => {
-    const llm=await create_llm("groq");
+    const llm=await create_llm();
     
-    const response=await llm.invoke(state.query);
+    const messages=[
+        new SystemMessage("You are a helpful AI assistant"),
+        ...state.history,
+        new HumanMessage(state.query)
+    ]
+
+    // console.log(...messages)
+
+    const response=await llm.invoke(messages);
 
     return {
         answer: response.content
