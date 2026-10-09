@@ -10,7 +10,7 @@ import { web_search_tool } from "../../../packages/core/tools/web_search_tool.ts
 
 
 const chat_node = async(state: typeof AgentState.State) => {
-    const llm=(await create_llm("gemini")).bindTools([web_search_tool]);
+    const llm=(await create_llm("groq")).bindTools([web_search_tool]);
 
     const last_message=state.history.at(-1)
     const messages = [
