@@ -10,20 +10,20 @@ import { web_search_tool } from "../../../packages/core/tools/web_search_tool.ts
 
 
 const chat_node = async(state: typeof AgentState.State) => {
-    const llm=(await create_llm("groq")).bindTools([web_search_tool]);
+    const llm=(await create_llm("gemini")).bindTools([web_search_tool]);
 
     const last_message=state.history.at(-1)
     const messages = [
-        new SystemMessage(new SystemMessage(`
+        new SystemMessage(`
             You are a helpful AI assistant.
 
             For any question requiring current, real-time, or up-to-date information,
             always use the web_search tool before answering.
-            `)),
+            `),
         ...state.history,
     ];
 
-    if (!(last_message instanceof HumanMessage)) {
+    if (!(last_message instanceof HumanMessage) && !(last_message instanceof ToolMessage)) {
         messages.push(new HumanMessage(state.query));
     }
 
@@ -59,7 +59,6 @@ const tool_node = async (state: typeof AgentState.State) => {
     
     for (const tool_call of last_message.tool_calls ?? []) {
         
-        console.log(last_message instanceof AIMessage)
         console.log(
             "Tool called with query:",
             (tool_call.args as { query: string }).query
@@ -70,8 +69,8 @@ const tool_node = async (state: typeof AgentState.State) => {
             const result = await web_search_tool.invoke(
                 tool_call.args as { query: string }
             );
-            console.log(`Content`)
-            console.log(result)
+            // console.log(`Content`)
+            // console.log(result)
             tool_messages.push(
                 new ToolMessage({
                     content: result,

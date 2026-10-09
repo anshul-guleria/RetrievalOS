@@ -1,12 +1,15 @@
-import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
+import { TavilySearch } from "@langchain/tavily";
 import { tool } from "@langchain/core/tools";
-import { z } from "zod"
+import { z } from "zod";
+
+const tavilySearch = new TavilySearch({
+  maxResults: 5
+});
 
 const web_search_tool=tool(
     async ({query}) => {
-        return await new DuckDuckGoSearch({
-            maxResults:5
-        }).invoke(query)
+        const result = await tavilySearch.invoke({query});
+        return JSON.stringify(result);
     },
     {
         name: "web_search_tool",
