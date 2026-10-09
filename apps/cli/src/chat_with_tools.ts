@@ -1,6 +1,7 @@
 import readline from "readline/promises"
 import {stdin as input, stdout as output} from "process"
 import { AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage } from "langchain";
+import { StringOutputParser } from "@langchain/core/output_parsers"
 
 import { MessagesValue, type GraphNode, StateGraph, START, END, StateSchema } from "@langchain/langgraph";
 import { AgentState } from "../../../packages/providers/src/agent/state.ts";
@@ -8,9 +9,10 @@ import { create_llm } from "../../../packages/providers/src/llm/index.ts";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { web_search_tool } from "../../../packages/core/tools/web_search_tool.ts";
 
+const output_parser=new StringOutputParser();
 
 const chat_node = async(state: typeof AgentState.State) => {
-    const llm=(await create_llm("groq")).bindTools([web_search_tool]);
+    const llm=(await create_llm("gemini")).bindTools([web_search_tool]);
 
     const last_message=state.history.at(-1)
     const messages = [
@@ -29,17 +31,23 @@ const chat_node = async(state: typeof AgentState.State) => {
 
     const response=await llm.invoke(messages);
     
-    // console.log(...state.history)
-    
+    if (typeof response?.content == typeof "") {
+        return {
+            history: [
+            ...state.history,
+            new HumanMessage(state.query),
+            response,
+        ],
+        answer: response?.content
+        }
+    }
     return {
         history: [
             ...state.history,
-        new HumanMessage(state.query),
-        response,
-    ],
-    answer: response?.content
-    
-}
+            new HumanMessage(state.query),
+            response,
+        ]
+    }
 
 }
 
@@ -80,9 +88,9 @@ const tool_node = async (state: typeof AgentState.State) => {
         }
     }
 
-    for (const message of tool_messages) {
-        console.log("Tool message:", message.content);
-    }
+    // for (const message of tool_messages) {
+    //     console.log("Tool message:", message.content);
+    // }
     return {
         history: [
             ...state.history,
