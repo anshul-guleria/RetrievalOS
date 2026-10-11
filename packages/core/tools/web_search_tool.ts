@@ -8,7 +8,11 @@ const tavilySearch = new TavilySearch({
 
 const web_search_tool=tool(
     async ({query}) => {
-        const result = await tavilySearch.invoke({query});
+        const result = await tavilySearch.invoke({
+            name: "tavily_search",
+            args: { query },
+            type: "tool_call"
+        });
         return JSON.stringify(result);
     },
     {
