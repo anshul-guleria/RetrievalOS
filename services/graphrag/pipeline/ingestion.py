@@ -5,7 +5,7 @@ load_dotenv()
 
 from services.graphrag.components.loader import document_loader, Document, rich_print
 from services.graphrag.components.chunker import chunk_documents_by_recursive_text_splitter
-from services.graphrag.components.extractor import extract_from_chunk
+from services.graphrag.components.extractor import extract_from_chunk, validate_extraction
 
 def ingest_documents(path: str) -> list[Document]:
     """Ingest and chunks the documents"""
@@ -22,6 +22,8 @@ result = asyncio.run(
     extract_from_chunk(chunk.page_content)
     )
 
+result=validate_extraction(result)
+
 print("Entities:")
 for entity in result.entities:
     print(entity.model_dump())
@@ -29,4 +31,3 @@ for entity in result.entities:
 print("Relationships:")
 for relation in result.relations:
     print(relation.model_dump())
-
