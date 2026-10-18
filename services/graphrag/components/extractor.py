@@ -55,3 +55,16 @@ async def extract_from_chunk(
             logger.error(f"Attempt {i+1} failed.\nError during extraction: {e}. Retrying in {time_seconds}s...\n")
 
         await asyncio.sleep(2)
+
+
+def validate_extraction(result: ExtractionResult) -> ExtractionResult:
+    entity_names = {entity.name for entity in result.entities}
+
+    result.relations = [
+        relation
+        for relation in result.relations
+        if relation.source in entity_names
+        and relation.target in entity_names
+    ]
+
+    return result
