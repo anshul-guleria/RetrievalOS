@@ -6,5 +6,6 @@ documents/
 __pycache__/
 
 *.md
+!README.md
 *.pdf
 *.docx
