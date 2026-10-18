@@ -7,27 +7,38 @@ from services.graphrag.components.loader import document_loader, Document, rich_
 from services.graphrag.components.chunker import chunk_documents_by_recursive_text_splitter
 from services.graphrag.components.extractor import extract_from_chunk, validate_extraction
 
-def ingest_documents(path: str) -> list[Document]:
+async def ingest_documents(path: str) -> list[Document]:
     """Ingest and chunks the documents"""
     documents = document_loader(path)
     chunked_documents = chunk_documents_by_recursive_text_splitter(documents)
-    return chunked_documents
 
-docs=ingest_documents(r"C:\Users\anshu\Desktop\RetrievalOS\ANSHUL_GULERIA_AI.pdf")
-rich_print(docs)
+    extraction_result=[]
 
-chunk=docs[0]
+    for chunk in chunked_documents:
+        result=await extract_from_chunk(chunk)
+        result=validate_extraction(result)
 
-result = asyncio.run(
-    extract_from_chunk(chunk.page_content)
-    )
+        extraction_result.append(result)
 
-result=validate_extraction(result)
+    return extraction_result
 
-print("Entities:")
-for entity in result.entities:
-    print(entity.model_dump())
 
-print("Relationships:")
-for relation in result.relations:
-    print(relation.model_dump())
+
+# docs=ingest_documents(r"C:\Users\anshu\Desktop\RetrievalOS\ANSHUL_GULERIA_AI.pdf")
+# rich_print(docs)
+
+# chunk=docs[0]
+
+# result = asyncio.run(
+#     extract_from_chunk(chunk.page_content)
+#     )
+
+# result=validate_extraction(result)
+
+# print("Entities:")
+# for entity in result.entities:
+#     print(entity.model_dump())
+
+# print("Relationships:")
+# for relation in result.relations:
+#     print(relation.model_dump())
