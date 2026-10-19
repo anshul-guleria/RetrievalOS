@@ -8,6 +8,7 @@ from services.graphrag.components.chunker import chunk_documents_by_recursive_te
 from services.graphrag.components.extractor import extract_from_chunk, validate_extraction
 from services.graphrag.db.neo4j_client import neo4j_client
 from services.graphrag.db.neo4j_writer import persist_chunk
+from services.graphrag.embedding.google_embeddings import embed_chunk
 
 import logging
 logger=logging.getLogger(__name__)
@@ -31,14 +32,14 @@ async def ingest_documents(path: str, chunk_size: int, overlap: int):
 
     extraction_result=[]
 
-    #Connect to neo4j
-    await neo4j_client.connect()
-
     source=os.path.abspath(path)
     try:
         for index, chunk in enumerate(chunked_documents):
 
             chunk_text=chunk.page_content
+
+            #Generate embedding for the text
+            embedding = await embed_chunk(chunk_text)
 
             result=await extract_from_chunk(chunk)
             result=validate_extraction(result)
@@ -52,16 +53,14 @@ async def ingest_documents(path: str, chunk_size: int, overlap: int):
                 chunk_index=index,
                 chunk_text=chunk_text,
                 result=result,
+                embedding=embedding,
                 database=neo4j_client.database,
             )
 
             logger.info("Neo4j write result: %s", stats)
 
     except Exception as e:
-        logging.error("Ingestion Failed: %d", e)
-
-    finally:
-        await neo4j_client.close()
+        logging.error(f"Ingestion Failed: {e}")
 
     logger.info("Ingestion completed successfully.")
 

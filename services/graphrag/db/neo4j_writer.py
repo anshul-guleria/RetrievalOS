@@ -40,6 +40,7 @@ async def persist_chunk(
     chunk_index: int,
     chunk_text: str,
     result: ExtractionResult,
+    embedding: list[float],
     database: str = "neo4j",
 ) -> dict:
     """
@@ -142,7 +143,8 @@ async def persist_chunk(
         MERGE (c:Chunk {id: $chunk_id})
 
         SET c.text = $text,
-            c.index = $chunk_index
+            c.index = $chunk_index,
+            c.embedding = $embedding
 
         MERGE (d)-[:HAS_CHUNK]->(c)
         """
@@ -153,6 +155,7 @@ async def persist_chunk(
             chunk_id=chunk_id,
             text=chunk_text,
             chunk_index=chunk_index,
+            embedding=embedding
         )
         await res.consume()
 
