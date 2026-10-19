@@ -41,6 +41,22 @@ class Neo4jClient:
                 result = await session.run(query)
                 await result.consume()
 
+    async def create_vector_index(self):
+        async with self.driver.session(
+            database=self.database
+        ) as session:
+            await session.run("""
+                CREATE VECTOR INDEX chunk_embedding_index IF NOT EXISTS
+                FOR (c:Chunk)
+                ON (c.embedding)
+                OPTIONS {
+                    indexConfig: {
+                        `vector.dimensions`: 1536,
+                        `vector.similarity_function`: 'cosine'
+                    }
+                }
+        """)
+
     async def close(self):
         await self.driver.close()
 
