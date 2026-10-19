@@ -13,7 +13,7 @@ import logging
 logger=logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-async def ingest_documents(path: str) -> list[Document]:
+async def ingest_documents(path: str, chunk_size: int, overlap: int):
     """Ingest and chunks the documents"""
 
     documents = document_loader(path)
@@ -21,7 +21,7 @@ async def ingest_documents(path: str) -> list[Document]:
         logger.warning("No documents were loaded from: %s", path)
         return []
 
-    chunked_documents = chunk_documents_by_recursive_text_splitter(documents)
+    chunked_documents = chunk_documents_by_recursive_text_splitter(documents, chunk_size=chunk_size, overlap=overlap)
     if not chunked_documents:
         logger.warning("No chunks were created from: %s", path)
         return []

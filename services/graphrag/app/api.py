@@ -9,13 +9,17 @@ app = FastAPI(title="Graph RAG API")
 
 class IngestionRequest(BaseModel):
     path: str
+    chunk_size: int
+    overlap: int
 
 
-@app.post("/graph-rag/ingest")
+@app.post("/graphrag/ingest-document")
 async def ingest_documents_in_graph_db(request: IngestionRequest):
     """Ingest a document into Neo4j."""
 
     path = Path(request.path)
+    chunk_size=request.chunk_size
+    overlap=request.overlap
 
     if not path.exists():
         raise HTTPException(
@@ -30,7 +34,7 @@ async def ingest_documents_in_graph_db(request: IngestionRequest):
         )
 
     try:
-        results = await ingest_documents(str(path))
+        results = await ingest_documents(str(path), chunk_size=chunk_size, overlap=overlap)
 
         return {
             "message": "Document ingested successfully",
