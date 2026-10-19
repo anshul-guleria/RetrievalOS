@@ -54,7 +54,12 @@ async def extract_from_chunk(
         except Exception as e:
             logger.error(f"Attempt {i+1} failed.\nError during extraction: {e}. Retrying in {time_seconds}s...\n")
 
+            if i==max_attempts:
+                raise
+
         await asyncio.sleep(2)
+
+    raise RuntimeError("Extraction Failed")
 
 
 def validate_extraction(result: ExtractionResult) -> ExtractionResult:
