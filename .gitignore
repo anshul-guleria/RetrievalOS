@@ -9,3 +9,6 @@ __pycache__/
 !README.md
 *.pdf
 *.docx
+
+#the frontend is yet not added
+web/ 

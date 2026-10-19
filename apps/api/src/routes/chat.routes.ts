@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { graph } from "../../../../packages/core/graph/simple_chat_graph.ts";
 

@@ -6,39 +6,64 @@ load_dotenv()
 from services.graphrag.components.loader import document_loader, Document, rich_print
 from services.graphrag.components.chunker import chunk_documents_by_recursive_text_splitter
 from services.graphrag.components.extractor import extract_from_chunk, validate_extraction
+from services.graphrag.db.neo4j_client import neo4j_client
+from services.graphrag.db.neo4j_writer import persist_chunk
 
-async def ingest_documents(path: str) -> list[Document]:
+import logging
+logger=logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+async def ingest_documents(path: str, chunk_size: int, overlap: int):
     """Ingest and chunks the documents"""
+
     documents = document_loader(path)
-    chunked_documents = chunk_documents_by_recursive_text_splitter(documents)
+    if not documents:
+        logger.warning("No documents were loaded from: %s", path)
+        return []
+
+    chunked_documents = chunk_documents_by_recursive_text_splitter(documents, chunk_size=chunk_size, overlap=overlap)
+    if not chunked_documents:
+        logger.warning("No chunks were created from: %s", path)
+        return []
+
+    logger.info("Loaded %d document(s)", len(documents))
+    logger.info("Created %d chunk(s)", len(chunked_documents))
 
     extraction_result=[]
 
-    for chunk in chunked_documents:
-        result=await extract_from_chunk(chunk)
-        result=validate_extraction(result)
+    #Connect to neo4j
+    await neo4j_client.connect()
 
-        extraction_result.append(result)
+    source=os.path.abspath(path)
+    try:
+        for index, chunk in enumerate(chunked_documents):
 
-    return extraction_result
+            chunk_text=chunk.page_content
 
+            result=await extract_from_chunk(chunk)
+            result=validate_extraction(result)
 
+            extraction_result.append(result)
 
-# docs=ingest_documents(r"C:\Users\anshu\Desktop\RetrievalOS\ANSHUL_GULERIA_AI.pdf")
-# rich_print(docs)
+            # Save chunk and its graph data
+            stats = await persist_chunk(
+                driver=neo4j_client.driver,
+                source=source,
+                chunk_index=index,
+                chunk_text=chunk_text,
+                result=result,
+                database=neo4j_client.database,
+            )
 
-# chunk=docs[0]
+            logger.info("Neo4j write result: %s", stats)
 
-# result = asyncio.run(
-#     extract_from_chunk(chunk.page_content)
-#     )
+    except Exception as e:
+        logging.error("Ingestion Failed: %d", e)
 
-# result=validate_extraction(result)
+    finally:
+        await neo4j_client.close()
 
-# print("Entities:")
-# for entity in result.entities:
-#     print(entity.model_dump())
+    logger.info("Ingestion completed successfully.")
 
-# print("Relationships:")
-# for relation in result.relations:
-#     print(relation.model_dump())
+if __name__=="__main__":
+    asyncio.run(ingest_documents(r"C:\Users\anshu\Desktop\RetrievalOS\ANSHUL_GULERIA_AI.pdf"))
