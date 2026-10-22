@@ -1,14 +1,15 @@
 from neo4j import AsyncDriver
 from services.graphrag.db.neo4j_client import neo4j_client
 from services.graphrag.embedding.google_embeddings import embed_chunk
+from services.graphrag.utils.formatter import format_graphrag_chunks_for_llm
 
 VECTOR_INDEX_NAME = "chunk_embedding_index"
 DRIVER=neo4j_client.driver
 
-async def retrieve_context(
+async def retrieve_from_db(
     question: str,
     driver: AsyncDriver = DRIVER,
-    database: str | None=None,
+    database: str | None = None,
     top_k: int = 5,
 ) -> list[dict]:
     """
@@ -83,31 +84,33 @@ async def retrieve_context(
     return records
 
 
-async def retrieve_context_text(
+async def retrieve_context(
     question: str,
     database: str = "neo4j",
     top_k: int = 5,
-) -> str:
-    """
-    Format the retrieved chunks and graph facts as context for an LLM prompt.
-    """
-    records = await retrieve_context(
+    include_score: bool = False,
+    include_entities: bool = False,
+    score_threshold: float = 0.0,
+    include_raw: bool = False
+) -> dict:
+    """Retrieve chunks and graph facts and format them as context for an LLM prompt."""
+    raw_retrieved_context = await retrieve_from_db(
         question=question,
         database=database,
         top_k=top_k,
     )
 
-    if not records:
-        return "No relevant information was found in the knowledge graph."
+    if not raw_retrieved_context:
+        raise Exception("No relevant information was found in the knowledge graph.")
 
-    sections = []
+    formatted_context=format_graphrag_chunks_for_llm(
+        chunks=raw_retrieved_context,
+        include_score=include_score,
+        include_entities=include_entities,
+        score_threshold=score_threshold,
+    )
 
-    for i, record in enumerate(records, start=1):
-        sections.append(
-            f"Source {i} (similarity: {record['score']:.3f})\n"
-            f"Text: {record['text']}\n"
-            f"Entities: {record['entities']}\n"
-            f"Relationships: {record['relationships']}"
-        )
-
-    return "\n\n".join(sections)
+    return {
+        "raw_results": raw_retrieved_context if include_raw else "raw results turned off",
+        "context": formatted_context
+    }
