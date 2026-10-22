@@ -5,7 +5,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 from services.graphrag.pipeline.ingestion import ingest_documents
-from services.graphrag.pipeline.retrieval import retrieve_context_text
+from services.graphrag.pipeline.retrieval import retrieve_context
 from services.graphrag.db.neo4j_client import neo4j_client
 
 @asynccontextmanager
@@ -55,7 +55,7 @@ async def ingest_documents_in_graph_db(request: IngestionRequest):
         return {
             "message": "Document ingested successfully",
             "path": str(path),
-            "results": results,
+            "raw_results": results,
         }
 
     except Exception as exc:
@@ -66,7 +66,7 @@ async def ingest_documents_in_graph_db(request: IngestionRequest):
 
 @app.post("/graphrag/retrieve")
 async def retrieve_context_from_graph_db(request: RetrievalRequest):
-    """Retrieve context from graph DB"""
+    """Retrieve context from graph DB via API"""
     
     question = request.question
     top_k = request.top_k
@@ -84,12 +84,13 @@ async def retrieve_context_from_graph_db(request: RetrievalRequest):
         )
 
     try:
-        results = await retrieve_context_text(question=question, top_k=top_k)
+        results = await retrieve_context(question=question, top_k=top_k)
 
         return {
             "message": "Context retrieved successfully",
             "question": question,
-            "results": results,
+            "context": results['context'],
+            "raw_retrieved_context": results['raw_results'],
         }
 
     except Exception as exc:
